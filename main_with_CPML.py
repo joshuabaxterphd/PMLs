@@ -128,8 +128,8 @@ for n in range(N_time_steps):
                                                               + P_Hz_y[:N_space_cells-1]))
 
     # add magnetic field source
-    # Hz[j_source-1] = Hz[j_source-1] - signal((n + 0.5)*dt - t_offset, pulse_width, pulse_delay, omega0) / Z #  for right-propagation 
-    Hz[j_source-1] = Hz[j_source-1] + signal((n + 0.5)*dt + t_offset, pulse_width, pulse_delay, omega0) / Z #  for left-propagation 
+    # Hz[j_source-1] = Hz[j_source-1] - signal((n + 0.5)*dt - t_offset, pulse_width, pulse_delay, omega0) / Z #  for right-propagation (+y)
+    Hz[j_source-1] = Hz[j_source-1] + signal((n + 0.5)*dt + t_offset, pulse_width, pulse_delay, omega0) / Z #  for left-propagation (-y)
 
     # update electric field PML fields
     P_Ex_y[-pml_size:] = be_y_f * P_Ex_y[-pml_size:] + ce_y_f * (Hz[-pml_size:] - Hz[-pml_size-1:-1]) / step_size
