@@ -30,7 +30,7 @@ sigma = np.zeros(N_space_cells)
 sigma_h = np.zeros(N_space_cells)
 refractive_index = np.sqrt(eps)
 
-# set up PML for both +y and -y sides
+# set up graded PMLs for both +y and -y sides
 pml_size = 10
 m = 3
 pml_cond_e = - (m + 1) * np.log(1e-10) * c0 * eps0 / (2 * pml_size * step_size)
@@ -41,36 +41,26 @@ sigma_h[-pml_size:] = pml_cond_e * mu0 / (eps0 * eps[-pml_size:]) * ((np.arange(
 sigma[:pml_size] = pml_cond_e * np.flip((np.arange(pml_size) + 1)/pml_size) ** m # electric conductivity -y
 sigma_h[:pml_size] = pml_cond_e * mu0 / (eps0 * eps[:pml_size]) * np.flip((np.arange(pml_size) + 0.5)/pml_size) ** m # magnetic conductivity -y
 
+plt.plot(sigma)
+plt.show()
 
-# plt.plot(sigma)
-# plt.show()
-
-h_coeff = dt/(mu0 * step_size)
-
+# Electric field update coefficients
 denominator = eps0 * eps/dt + sigma/2
 e_coeff_1 = (eps0 * eps/dt - sigma/2) / denominator
 e_coeff_2 = 1.0 / (step_size * denominator)
 
+# Magnetic field update coefficients
 denominator_h = mu0/dt + sigma_h/2
 h_coeff_1 = (mu0/dt - sigma_h/2) / denominator_h
 h_coeff_2 = 1.0 / (step_size * denominator_h)
 
-c = c0 / refractive_index[0]
-c_ = c0 / refractive_index[-1]
-a = (c * dt - step_size) / (c * dt + step_size)
-a_ = (c_ * dt - step_size) / (c_ * dt + step_size)
-pml_size = 0
 
-# set up pulse stuff
+# set up source stuff
 center_wavelength = 1550e-9
 omega0 = 2 * np.pi * c0 / center_wavelength
 pulse_width = 10e-15
 pulse_delay = 4 * pulse_width
 
-# time = np.linspace(0,simulation_time,N_time_steps)
-# pulse = signal(time,pulse_width,pulse_delay,omega0)
-# plt.plot(time,pulse)
-# plt.show()
 
 j_source = N_space_cells//2 + pml_size
 t_offset = refractive_index[j_source] * step_size / (2 * c0)
@@ -81,7 +71,6 @@ E_movie = []
 # set up Fourier monitor
 jT = N_space_cells - pml_size - 5
 jR = j_source - 5
-jR = N_space_cells - pml_size - 5
 
 ER = np.zeros(N_time_steps)
 ET = np.zeros(N_time_steps)
@@ -96,8 +85,8 @@ for n in range(N_time_steps):
                             + h_coeff_2[:N_space_cells-1] * (Ex[1:] - Ex[0:N_space_cells-1]))
 
     # add magnetic field source
-    Hz[j_source-1] = Hz[j_source-1] + signal((n + 0.5)*dt + t_offset, pulse_width, pulse_delay, omega0) / Z
-    # Hz[j_source-1] = Hz[j_source-1] - signal((n + 0.5)*dt - t_offset, pulse_width, pulse_delay, omega0) / Z
+    # Hz[j_source-1] = Hz[j_source-1] + signal((n + 0.5)*dt + t_offset, pulse_width, pulse_delay, omega0) / Z
+    Hz[j_source-1] = Hz[j_source-1] - signal((n + 0.5)*dt - t_offset, pulse_width, pulse_delay, omega0) / Z
 
     # update electric field at n+1
     Ex[1:N_space_cells-1] = (e_coeff_1[1:N_space_cells-1] * Ex_prev[1:N_space_cells-1]
@@ -125,46 +114,29 @@ omegas = 2 * np.pi * c0 /wavelengths
 time = np.arange(N_time_steps) * dt
 
 def Discrete_Fourier_Transform(field, time, omega):
+    # Calculates Discrete fourier transform of field(time) at frequency points in omega
     N_freq = omega.shape[0]
     field_omega = np.zeros(N_freq, dtype= 'complex128')
     for w in range(N_freq):
         field_omega[w] = np.sum(field * np.exp(1j * omega[w] * time))
     return field_omega
 
-def thin_film_TR(n1,n2,n3,wavelengths,thickness):
-    r12 = (n1 - n2)/(n1 + n2)
-    r23 = (n2 - n3)/(n2 + n3)
-    t12 = 2 * n1 / (n1 + n2)
-    t23 = 2 * n2 / (n2 + n3)
-    beta = 2 * np.pi * n2 * thickness / wavelengths
-    r = (r12 + r23 * np.exp(-2 * 1j * beta))/(1.0 + r12 * r23 * np.exp(-2 * 1j * beta))
-    t = (t12 * t23 * np.exp(-1j * beta))/(1.0 + r12 * r23 * np.exp(-2 * 1j * beta))
-    return (n3/n1) * np.abs(t) ** 2, np.abs(r) ** 2
 
-
+# Calculate and Plot the reflectance spectra 
 pulse = signal(time,pulse_width,pulse_delay,omega0)
-
 ET_FT = Discrete_Fourier_Transform(ET,time,omegas)
 ER_FT = Discrete_Fourier_Transform(ER,time,omegas)
 pulse_FT = Discrete_Fourier_Transform(pulse,time,omegas)
-
 R = np.abs(ER_FT) ** 2 / np.abs(pulse_FT) ** 2
 T = np.abs(ET_FT) ** 2 / np.abs(pulse_FT) ** 2 * refractive_index[jT] / refractive_index[j_source]
 
-# T_, R_ = thin_film_TR(1.0,np.sqrt(12.11),np.sqrt(4), wavelengths, thin_film_thickness)
-
 plt.plot(wavelengths, R, 'blue')
-# plt.plot(wavelengths, R_, 'x', color = 'blue')
-# plt.plot(wavelengths, T, 'red')
-# plt.plot(wavelengths, T_, 'x', color = 'red')
-# plt.plot(wavelengths,1-R-T,"violet")
 plt.xlabel("wavelengths (m)")
 plt.ylabel("Spectrum")
-# plt.legend(["Reflectance","R-analytic", "Transmittance","T-analytic","Absorption"])
-plt.legend(["Reflectance", "Transmittance"])
 plt.show()
 
 
+# Create an animation of the electric field and play the video
 frames = [] # for storing the generated images
 fig = plt.figure()
 ax = fig.add_subplot(1,1,1)
