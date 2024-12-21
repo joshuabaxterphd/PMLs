@@ -85,8 +85,8 @@ for n in range(N_time_steps):
                             + h_coeff_2[:N_space_cells-1] * (Ex[1:] - Ex[0:N_space_cells-1]))
 
     # add magnetic field source
-    # Hz[j_source-1] = Hz[j_source-1] + signal((n + 0.5)*dt + t_offset, pulse_width, pulse_delay, omega0) / Z
-    Hz[j_source-1] = Hz[j_source-1] - signal((n + 0.5)*dt - t_offset, pulse_width, pulse_delay, omega0) / Z
+    # Hz[j_source-1] = Hz[j_source-1] + signal((n + 0.5)*dt + t_offset, pulse_width, pulse_delay, omega0) / Z # for left propagation (-y)
+    Hz[j_source-1] = Hz[j_source-1] - signal((n + 0.5)*dt - t_offset, pulse_width, pulse_delay, omega0) / Z # for right propagation (+y)
 
     # update electric field at n+1
     Ex[1:N_space_cells-1] = (e_coeff_1[1:N_space_cells-1] * Ex_prev[1:N_space_cells-1]
