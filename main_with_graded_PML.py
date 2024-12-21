@@ -10,16 +10,19 @@ mu0 = 1.256637062e-6 # permeability of free space
 c0 = 2.99792458e8 # speed of light in vacuum
 imp0 = np.sqrt(mu0/eps0) # impedance of free space
 
+# Simulation domain size, step size, etc-
 simulation_size = 20e-6
 step_size = 5e-9 # dy
 N_space_cells = int(simulation_size/step_size) # jmax
 print(f"there are {N_space_cells} FDTD cells")
 
+# Simulation time step size, and total simulation time
 dt = step_size/c0
 simulation_time = 1e-12
 N_time_steps = int(simulation_time/dt)
 print(f"there are {N_time_steps} FDTD time steps")
 
+# allocate memory for everything
 Ex = np.zeros(N_space_cells)
 Hz = np.zeros(N_space_cells)
 eps = np.ones(N_space_cells) * 1
@@ -27,15 +30,16 @@ sigma = np.zeros(N_space_cells)
 sigma_h = np.zeros(N_space_cells)
 refractive_index = np.sqrt(eps)
 
+# set up PML for both +y and -y sides
 pml_size = 10
 m = 3
 pml_cond_e = - (m + 1) * np.log(1e-10) * c0 * eps0 / (2 * pml_size * step_size)
 
-sigma[-pml_size:] = pml_cond_e * (np.arange(pml_size)/pml_size) ** m
-sigma_h[-pml_size:] = pml_cond_e * mu0 / (eps0 * eps[-pml_size:]) * ((np.arange(pml_size) + 0.5)/pml_size) ** m
+sigma[-pml_size:] = pml_cond_e * (np.arange(pml_size)/pml_size) ** m # electric conductivity +y
+sigma_h[-pml_size:] = pml_cond_e * mu0 / (eps0 * eps[-pml_size:]) * ((np.arange(pml_size) + 0.5)/pml_size) ** m  # magnetic conductivity +y
 
-sigma[:pml_size] = pml_cond_e * np.flip((np.arange(pml_size) + 1)/pml_size) ** m
-sigma_h[:pml_size] = pml_cond_e * mu0 / (eps0 * eps[:pml_size]) * np.flip((np.arange(pml_size) + 0.5)/pml_size) ** m
+sigma[:pml_size] = pml_cond_e * np.flip((np.arange(pml_size) + 1)/pml_size) ** m # electric conductivity -y
+sigma_h[:pml_size] = pml_cond_e * mu0 / (eps0 * eps[:pml_size]) * np.flip((np.arange(pml_size) + 0.5)/pml_size) ** m # magnetic conductivity -y
 
 
 # plt.plot(sigma)
