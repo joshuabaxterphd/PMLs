@@ -125,7 +125,7 @@ def Discrete_Fourier_Transform(field, time, omega):
 pulse = signal(time,pulse_width,pulse_delay,omega0)
 
 
-# Calculate and Plot the transmittance spectra 
+# Calculate and Plot the reflectance spectra 
 ET_FT = Discrete_Fourier_Transform(ET,time,omegas)
 ER_FT = Discrete_Fourier_Transform(ER,time,omegas)
 pulse_FT = Discrete_Fourier_Transform(pulse,time,omegas)
